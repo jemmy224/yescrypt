@@ -17,21 +17,19 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-
-#include <Python.h>
 #include "yescrypt.h"
 #include "sha256_c.h"
 #include "yescrypt-best_c.h"
 
-#define YESCRYPT_N 2048
-#define YESCRYPT_R 8
+#define YESCRYPT_N 4096
+#define YESCRYPT_R 16
 #define YESCRYPT_P 1
 #define YESCRYPT_T 0
 #define YESCRYPT_FLAGS (YESCRYPT_RW | YESCRYPT_PWXFORM)
 
 #ifdef __clang__
 
-static int yescrypt_bitzeny(const uint8_t *passwd, size_t passwdlen,
+static int yescrypt_yenten(const uint8_t *passwd, size_t passwdlen,
                             const uint8_t *salt, size_t saltlen,
                             uint8_t *buf, size_t buflen)
 {
@@ -61,7 +59,7 @@ static int yescrypt_bitzeny(const uint8_t *passwd, size_t passwdlen,
 
 #else
 
-static int yescrypt_bitzeny(const uint8_t *passwd, size_t passwdlen,
+static int yescrypt_yenten(const uint8_t *passwd, size_t passwdlen,
                             const uint8_t *salt, size_t saltlen,
                             uint8_t *buf, size_t buflen)
 {
@@ -102,35 +100,9 @@ static int yescrypt_bitzeny(const uint8_t *passwd, size_t passwdlen,
 
 #endif
 
-static void yescrypt_hash(const char *input, char *output)
+void yescrypt_hash(const char *input, char *output)
 {
-    yescrypt_bitzeny((const uint8_t *) input, 80,
+    yescrypt_yenten((const uint8_t *) input, 80,
                      (const uint8_t *) input, 80,
                      (uint8_t *) output, 32);
-}
-
-static PyObject *yescrypt_getpowhash(PyObject *self, PyObject *args)
-{
-    char *output;
-    PyObject *value;
-    PyStringObject *input;
-    if (!PyArg_ParseTuple(args, "S", &input))
-        return NULL;
-    Py_INCREF(input);
-    output = PyMem_Malloc(32);
-
-    yescrypt_hash((char *)PyString_AsString((PyObject*) input), output);
-    Py_DECREF(input);
-    value = Py_BuildValue("s#", output, 32);
-    PyMem_Free(output);
-    return value;
-}
-
-static PyMethodDef YescryptMethods[] = {
-    { "getPoWHash", yescrypt_getpowhash, METH_VARARGS, "Returns the proof of work hash using yescrypt" },
-    { NULL, NULL, 0, NULL }
-};
-
-PyMODINIT_FUNC initzny_yescrypt(void) {
-    (void) Py_InitModule("zny_yescrypt", YescryptMethods);
 }
